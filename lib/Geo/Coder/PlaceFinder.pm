@@ -9,7 +9,7 @@ use JSON;
 use LWP::UserAgent;
 use URI;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 $VERSION = eval $VERSION;
 
 sub new {
@@ -28,6 +28,9 @@ sub new {
         my $dump_sub = sub { $_[0]->dump(maxlength => 0); return };
         $self->ua->set_my_handler(request_send  => $dump_sub);
         $self->ua->set_my_handler(response_done => $dump_sub);
+    }
+    elsif (exists $self->{compress} ? $self->{compress} : 1) {
+        $self->ua->default_header(accept_encoding => 'gzip,deflate');
     }
 
     return $self;
@@ -50,7 +53,7 @@ sub geocode {
     my %params = (@params % 2) ? (location => @params) : @params;
 
     # Allow user to pass free-form, multi-line or fully-parsed formats.
-    return unless grep { defined } qw(
+    return unless grep { defined $params{$_} } qw(
         location q name line1 addr house woeid
     );
 
@@ -180,10 +183,6 @@ Accessor for the UserAgent object.
 
 L<http://developer.yahoo.com/geo/placefinder/>
 
-L<Geo::Coder::Bing>, L<Geo::Coder::Bing::Bulk>, L<Geo::Coder::Google>,
-L<Geo::Coder::Mapquest>, L<Geo::Coder::Multimap>, L<Geo::Coder::Navteq>,
-L<Geo::Coder::OSM>, L<Geo::Coder::TomTom>, L<Geo::Coder::Yahoo>
-
 =head1 REQUESTS AND BUGS
 
 Please report any bugs or feature requests to
@@ -219,13 +218,13 @@ L<http://rt.cpan.org/Public/Dist/Display.html?Name=Geo-Coder-PlaceFinder>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Geo-Coder-PlaceFinder>
+L<http://search.cpan.org/dist/Geo-Coder-PlaceFinder/>
 
 =back
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2010 gray <gray at cpan.org>, all rights reserved.
+Copyright (C) 2010-2011 gray <gray at cpan.org>, all rights reserved.
 
 This library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
