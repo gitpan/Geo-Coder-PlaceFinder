@@ -9,7 +9,7 @@ use JSON;
 use LWP::UserAgent;
 use URI;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 $VERSION = eval $VERSION;
 
 sub new {
@@ -28,8 +28,9 @@ sub new {
         my $dump_sub = sub { $_[0]->dump(maxlength => 0); return };
         $self->ua->set_my_handler(request_send  => $dump_sub);
         $self->ua->set_my_handler(response_done => $dump_sub);
+        $self->{compress} ||= 0;
     }
-    elsif (exists $self->{compress} ? $self->{compress} : 1) {
+    if (exists $self->{compress} ? $self->{compress} : 1) {
         $self->ua->default_header(accept_encoding => 'gzip,deflate');
     }
 
@@ -51,20 +52,14 @@ sub ua {
 sub geocode {
     my ($self, @params) = @_;
     my %params = (@params % 2) ? (location => @params) : @params;
+    my $raw = delete $params{raw};
 
-    # Allow user to pass free-form, multi-line or fully-parsed formats.
-    return unless grep { defined $params{$_} } qw(
-        location q name line1 addr house woeid
-    );
-
-    while (my ($key, $val) = each %params) {
-        $params{$key} = Encode::encode('utf-8', $val);
-    }
+    $_ = Encode::encode('utf-8', $_) for values %params;
 
     my $uri = URI->new('http://where.yahooapis.com/geocode');
     $uri->query_form(
         appid  => $self->{appid},
-        flags  => 'JRST',
+        flags  => 'JRSTX',
         gflags => 'AC',
         %params,
     );
@@ -78,6 +73,7 @@ sub geocode {
 
     my $data = eval { from_json($res->decoded_content) };
     return unless $data;
+    return $data if $raw;
 
     my @results = @{ $data->{ResultSet}{Results} || [] };
     return wantarray ? @results : $results[0];
@@ -98,7 +94,7 @@ Geo::Coder::PlaceFinder - Geocode addresses with Yahoo PlaceFinder
 
     my $geocoder = Geo::Coder::PlaceFinder->new(appid => 'Your App ID');
     my $location = $geocoder->geocode(
-        location => 'Hollywood and Highland, Los Angeles, CA'
+        location => '701 First Ave, Sunnyvale, CA'
     );
 
 =head1 DESCRIPTION
@@ -110,15 +106,39 @@ PlaceFinder geocoding service.
 
 =head2 new
 
-    $geocoder = Geo::Coder::PlaceFinder->new(appid => 'Your App ID')
+   $geocoder = Geo::Coder::PlaceFinder->new('Your App ID')
+   $geocoder = Geo::Coder::PlaceFinder->new(
+       appid => 'Your App ID',
+       # debug => 1,
+   )
 
 Creates a new geocoding object.
 
-A Yahoo API Key can be obtained here:
+Accepts the following named arguments:
+
+=over
+
+=item * I<appid>
+
+A Yahoo Application ID. (required)
+
+An ID can be obtained here:
 L<https://developer.apps.yahoo.com/dashboard/createKey.html>
 
-Accepts an optional B<ua> parameter for passing in a custom LWP::UserAgent
-object.
+=item * I<ua>
+
+A custom LWP::UserAgent object. (optional)
+
+=item * I<compress>
+
+Enable compression. (default: 1, unless I<debug> is enabled)
+
+=item * I<debug>
+
+Enable debugging. This prints the headers and content for requests and
+responses. (default: 0)
+
+=back
 
 =head2 geocode
 
@@ -128,41 +148,99 @@ object.
 In scalar context, this method returns the first location result; and in
 list context it returns all location results.
 
-Each location result is a hashref; a typical example looks like:
+Accepts the following named arguments:
+
+=over
+
+=item * I<location>
+
+The free-form, single line address to be located. (optional)
+
+=item * I<raw>
+
+Returns the raw data structure converted from the response, not split into
+location results.
+
+=back
+
+Any additional arguments will added to the request. See the Yahoo
+PlaceFinder documention for the full list of accepted arguments.
+
+By default the following arguments are added:
+
+=over
+
+=item * I<flags>
+
+JRSTX
+
+=item * I<gflags>
+
+AC
+
+=back
+
+Example of the data structure representing a location result:
 
     {
-        areacode     => 213,
-        city         => "Los Angeles",
-        country      => "United States",
-        countrycode  => "US",
-        county       => "Los Angeles County",
-        countycode   => "",
-        cross        => "",
-        hash         => "",
-        house        => "",
-        latitude     => "34.101559",
-        line1        => "Hollywood and Highland",
-        line2        => "Los Angeles, CA  90028",
+        areacode    => 408,
+        boundingbox => {
+            east  => "-122.025092",
+            north => "37.416275",
+            south => "37.416275",
+            west  => "-122.025092",
+        },
+        city        => "Sunnyvale",
+        country     => "United States",
+        countrycode => "US",
+        county      => "Santa Clara County",
+        countycode  => "",
+        cross =>
+            "Near the intersection of 1st Ave and N Mathilda Ave/Bordeaux Dr",
+        hash         => "DDAD1896CC0CDC41",
+        house        => 701,
+        latitude     => "37.416275",
+        line1        => "701 1st Ave",
+        line2        => "Sunnyvale, CA  94089-1019",
         line3        => "",
         line4        => "United States",
-        longitude    => "-118.339073",
-        name         => "Hollywood and Highland",
+        longitude    => "-122.025092",
+        name         => "",
         neighborhood => "",
-        offsetlat    => "34.101559",
-        offsetlon    => "-118.339073",
-        postal       => 90028,
-        quality      => 90,
-        radius       => 100,
+        offsetlat    => "37.416397",
+        offsetlon    => "-122.025055",
+        postal       => "94089-1019",
+        quality      => 87,
+        radius       => 500,
         state        => "California",
         statecode    => "CA",
-        street       => "",
-        timezone     => "America/Los_Angeles",
-        unit         => "",
-        unittype     => "",
-        uzip         => 90028,
-        woeid        => 23529720,
-        woetype      => 20,
-        xstreet      => "",
+        street       => {
+            stbody   => "1ST",
+            stfull   => "1st Ave",
+            stpredir => undef,
+            stprefix => undef,
+            stsufdir => undef,
+            stsuffix => "AVE",
+        },
+        timezone => "America/Los_Angeles",
+        unit     => "",
+        unittype => "",
+        uzip     => 94089,
+        woeid    => 12797150,
+        woetype  => 11,
+        xstreet  => "",
+    }
+
+Example of the data structure returned using the I<raw> option:
+
+    ResultSet => {
+        Error        => 0,
+        ErrorMessage => "No error",
+        Found        => 1,
+        Locale       => "us_US",
+        Quality      => 60,
+        Results      => [ $location ]
+        version      => "1.0",
     }
 
 =head2 response
