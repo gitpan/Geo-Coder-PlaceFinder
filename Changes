@@ -1,22 +1,5 @@
-Revision history for Geo-Coder-PlaceFinder
+Revision history for Perl module Geo::Coder::PlaceFinder
 
-0.05  Sat Apr 30 01:11:49 UTC 2011
-    - Added 'raw' argument to geocode method.
-    - Added bounding box to each result.
-    - Removed parameter validation of request args- let Yahoo do it.
-    - Allowed compression to be used when under debug mode. (timbunce)
-    - Updated documentation.
+0.1     2014.03.29
+        - Release of Geo::Coder::PlaceFinder
 
-0.04  Mon Mar 21 18:07:44 UTC 2011
-    - Enabled compressed responses by default.
-
-0.03  Wed Nov 17 20:43:56 UTC 2010
-    - Accomodated multi-line and fully-parsed formatted addresses by
-      passing through any user-defined query parameters. (RT #63088)
-
-0.02  Tue Jul 6 20:42:55 UTC 2010
-    - Updated pod to reflect reality (removed reference to non-existent
-      batch method).
-
-0.01  Tue Jul 6 06:30:23 UTC 2010
-    - Initial distribution.

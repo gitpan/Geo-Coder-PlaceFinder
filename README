@@ -1,31 +1,26 @@
-Geo-Coder-PlaceFinder
-=====================
+Geo::Coder::PlaceFinder version 0.1
+===================================
 
-This module provides an interface to the Yahoo PlaceFinder geocoding web
-service.
+Please see the example scripts for more information and 
+usage instructions.
 
 INSTALLATION
-
+ 
 To install this module type the following:
-
-    perl Makefile.PL
-    make
-    make test
-    make install
-
+ 
+   perl Makefile.PL
+   make
+   make test
+   make install
+ 
 DEPENDENCIES
-
+ 
 This module requires these other modules and libraries:
 
-    Encode
-    JSON
-    LWP::UserAgent
-    Test::More
-    URI
+   JSON
+   LWP::UserAgent
+   Net::OAuth
 
 COPYRIGHT AND LICENCE
-
-Copyright (C) 2010-2011 by gray <gray@cpan.org>
-
-This library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+ 
+Copyright (C) 2014 Alistair Francis, http://www.alistairfrancis.com/
